@@ -146,6 +146,10 @@ async def update_score(u_id:int,game_name:str,score:int):
     result = collection.update_one(filter_criteria, update_operation)
     return "Success"
 
+@app.post("/")
+async def root():    
+    return "Happy coding!"
+
 async def generate_events():        
     for item in range(0,10):
         yield f"data: Event {item} \n\n"
