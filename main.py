@@ -1,4 +1,4 @@
-from fastapi import FastAPI,APIRouter,Depends,Request
+from fastapi import FastAPI,APIRouter,Depends,Request,Query
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.middleware.cors import CORSMiddleware
 import json
@@ -78,10 +78,16 @@ async def add_user(user: Request):
 
 @app.post("/acceptfriendrequest")
 async def accept_fr(fr:FriendRequest):
+    print(fr.user_id)
+    print(fr.friend_id)
     collection = app.mongodb["users"]
     user_data=await collection.find_one({"id":fr.user_id})
         
     user_data['friends'].append(fr.friend_id)
+    try:
+        user_data['friendrequests'].remove(fr.friend_id)
+    except:
+        return json.dumps({"status": 500,"error":'This user did not send the request'})
         
     filter_criteria = {"id":fr.user_id}
     update_operation = {"$set": user_data}
@@ -91,10 +97,7 @@ async def accept_fr(fr:FriendRequest):
     user_data=await collection.find_one({"id":fr.friend_id})    
 
     user_data['friends'].append(fr.user_id)
-    try:
-        user_data['friendrequests'].remove(fr.user_id)
-    except:
-        return json.dumps({"status": 500,"error":'This user did not send the request'})
+   
     
     filter_criteria = {"id":fr.friend_id}
     update_operation = {"$set": user_data}
@@ -122,23 +125,19 @@ async def reject_fr(fr:FriendRequest):
     return json.dumps({"status": 200})
 
 
+@app.get("/getuserid")
+async def user_id(email: str = Query(None)):
+    collection = app.mongodb["users"]
+    user_data=await collection.find_one({"email":email})
+    return user_data['id']
+
 @app.post("/sendfriendrequest")
 async def send_fr(fr:FriendRequest):
     collection = app.mongodb["users"]
     user_data=await collection.find_one({"id":fr.friend_id})
         
     user_data['friendrequests'].append(fr.user_id)
-
-    try:
-        user_data['suggestions'].remove(fr.friend_id)
-    except:
-        pass
-
-    try:
-        user_data['suggestions'].remove(fr.user_id)
-    except:
-        pass
-
+    
     filter_criteria = {"id":fr.friend_id}
     update_operation = {"$set": user_data}
     result = collection.update_one(filter_criteria, update_operation)
