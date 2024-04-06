@@ -9,7 +9,7 @@ import asyncio
 
 
 # MongoDB configuration
-MONGO_URI = "mongodb://localhost:27017"
+MONGO_URI = "mongodb+srv://shreyamohan283:OGBQN0GSXTqtXakA@cluster0.apv7ktv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 MONGO_DB = "gamescommunity"
 users_collection=[]
 
@@ -51,8 +51,20 @@ async def friendrequests(u_id: int):
     details=[{"id":item['id'],"name":item['name']} for item in friendetails]
     return json.dumps({"status": 200, "data": details})
 
+@app.get("/friends/{u_id}")
+async def friends(u_id: int):
+    collection = app.mongodb["users"]
+    friendrequests=[]
+    friendetails=[]
+    friendrequests=await collection.find_one({"id":u_id})
+    for item in friendrequests['friends']:
+         friendetails.append(await collection.find_one({"id":item}))
 
-@app.post("/api/get-matching-gamers/{id}")
+    details=[{"id":item['id'],"name":item['name']} for item in friendetails]
+    return json.dumps({"status": 200, "data": details})
+
+
+@app.get("/api/get-matching-gamers/{id}")
 async def create_item(id:int):
     matched_user= await findMatchedUser(id,users_collection)
     return matched_user

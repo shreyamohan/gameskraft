@@ -4,6 +4,7 @@ import json
 from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 from fastapi import HTTPException
+
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points 
@@ -21,23 +22,28 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 def check_match(gamer1, gamer2):
-    # Identify all games either gamer has played, using .get() to avoid KeyError
-    # If 'game_preferences' key does not exist, .get() returns an empty dictionary {}
-    gamer1_games = gamer1.get('game_preferences', {})
-    gamer2_games = gamer2.get('game_preferences', {})
+    # Retrieve the scores for each gamer
+    gamer1_scores = gamer1.get('scores', {})
+    gamer2_scores = gamer2.get('scores', {})
     
-    played_games = set(gamer1_games.keys()).union(gamer2_games.keys())
+    # Identify all games either gamer has played
+    gamer1_games = set(gamer1_scores.keys())
+    gamer2_games = set(gamer2_scores.keys())
     
-    for game in played_games:
-        # Using .get() to safely access scores, defaulting to 0 if game key is not found
-        score1 = gamer1.get('scores', {}).get(game, 0)
-        score2 = gamer2.get('scores', {}).get(game, 0)
+    # Check if both gamers have played the same games
+    if gamer1_games != gamer2_games:
+        return False
+    
+    # Check the score difference for each game
+    for game in gamer1_games:
+        score1 = gamer1_scores[game]
+        score2 = gamer2_scores[game]
         
         if abs(score1 - score2) > 10:
             return False
-            
+    
+    # If all checks pass, return True
     return True
-
 
 async def findPreference(user_id, users_collection):
     """
